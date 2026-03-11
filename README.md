@@ -4,7 +4,7 @@ An end-to-end data pipeline and analytics project analyzing Metro Vancouver's pu
 
 **Core question:** *Which bus routes face the greatest service gap between ridership demand and capacity, and how has the overcrowding crisis evolved from pre-pandemic through recovery?*
 
-[Metabase - TransLink Transit Analytics V2.pdf](https://github.com/user-attachments/files/25920090/Metabase.-.TransLink.Transit.Analytics.V2.pdf)
+<img width="1170" height="709" alt="image" src="https://github.com/user-attachments/assets/278d6980-59c7-4482-91fa-08141e5eabef" />
 
 ---
 
