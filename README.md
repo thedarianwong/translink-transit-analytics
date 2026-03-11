@@ -6,6 +6,8 @@ An end-to-end data pipeline and analytics project analyzing Metro Vancouver's pu
 
 <img width="1170" height="709" alt="image" src="https://github.com/user-attachments/assets/278d6980-59c7-4482-91fa-08141e5eabef" />
 
+[Link to Report](https://github.com/thedarianwong/translink-transit-analytics/blob/477fab7cdf2a6e5b0c52cab8bdb7125408c4268b/dashboards/screenshots/Metabase%20-%20TransLink%20Transit%20Analytics%20V2.pdf)
+
 ---
 
 ## Key Findings
