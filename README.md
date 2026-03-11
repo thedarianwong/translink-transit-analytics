@@ -21,17 +21,7 @@ An end-to-end data pipeline and analytics project analyzing Metro Vancouver's pu
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    A[TransLink TSPR CSVs\ndata/raw/] --> B[Python Ingestion\nload_to_snowflake.py]
-    B --> C[(Snowflake RAW\nraw_tspr_bus_yearline\nraw_tspr_bus_line\nraw_gtfs_stops)]
-    C --> D[dbt Staging\nstg_bus_performance\nstg_bus_line\nstg_stops]
-    D --> E[dbt Marts\ndim_routes\ndim_subregions\nfact_route_performance\nfct_overcrowding_ranking\nfct_service_gap\nfct_recovery_trends]
-    E --> F[Metabase Dashboard\n6 panels]
-    G[Airflow DAG\ntranslink_analytics] -.->|orchestrates| B
-    G -.->|orchestrates| D
-    G -.->|orchestrates| E
-```
+<img width="4348" height="2359" alt="image" src="https://github.com/user-attachments/assets/80a14614-0177-44b4-afc7-5ccd39b925ad" />
 
 ---
 
