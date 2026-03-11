@@ -1,0 +1,134 @@
+version: 2
+
+sources:
+  - name: raw
+    database: TRANSLINK_ANALYTICS
+    schema: RAW
+    description: >
+      Raw CSV data loaded by ingestion/load_to_snowflake.py.
+      All columns are VARCHAR — type casting happens in staging models.
+
+    tables:
+      # -----------------------------------------------------------------------
+      # TSPR Yearline reports (bus route KPIs per calendar year)
+      # Each report file covers multiple calendar years:
+      #   2023 report → CalendarYear 2019, 2022, 2023
+      #   2024 report → CalendarYear 2022, 2023, 2024
+      # Years 2022 and 2023 appear in both files — verify they match before
+      # running stg_bus_performance (see TASK_LOG Phase 3 notes).
+      # -----------------------------------------------------------------------
+      - name: RAW_TSPR_BUS_YEARLINE_2023
+        description: TSPR yearline report filed in 2023 (contains 2019, 2022, 2023 data)
+        columns:
+          - name: CalendarYear
+            description: Year the data represents (2019, 2022, or 2023)
+          - name: Lineno_renamed
+            description: Bus route number — may contain combined routes like "005/006"
+          - name: AnnualBoardings
+          - name: AVG_Daily_Boardings_MF
+          - name: AVG_Daily_Boardings_Sat
+          - name: AVG_Daily_Boardings_SunHol
+          - name: Annual_Revenue_Hours
+          - name: Annual_Service_Hours
+          - name: Average_Boarding_Per_Revenue_Hour
+          - name: Average_Peak_Passenger_Load
+          - name: Average_Peak_Load_Factor
+          - name: Average_Capacity_Utilization
+          - name: Revenue_Hrs_w_Overcrowding
+          - name: Perc_Trips_w_Overcrowding
+          - name: On_Time_Performance_Percentage
+          - name: Bus_Bunching_Percentage
+          - name: AVG_speed_km_per_hr
+
+      - name: RAW_TSPR_BUS_YEARLINE_2024
+        description: TSPR yearline report filed in 2024 (contains 2022, 2023, 2024 data)
+        columns:
+          - name: CalendarYear
+            description: Year the data represents (2022, 2023, or 2024)
+          - name: Lineno_renamed
+            description: Bus route number — may contain combined routes like "005/006"
+          - name: AnnualBoardings
+          - name: AVG_Daily_Boardings_MF
+          - name: AVG_Daily_Boardings_Sat
+          - name: AVG_Daily_Boardings_SunHol
+          - name: Annual_Revenue_Hours
+          - name: Annual_Service_Hours
+          - name: Average_Boarding_Per_Revenue_Hour
+          - name: Average_Peak_Passenger_Load
+          - name: Average_Peak_Load_Factor
+          - name: Average_Capacity_Utilization
+          - name: Revenue_Hrs_w_Overcrowding
+          - name: Perc_Trips_w_Overcrowding
+          - name: On_Time_Performance_Percentage
+          - name: Bus_Bunching_Percentage
+          - name: AVG_speed_km_per_hr
+
+      # -----------------------------------------------------------------------
+      # ArcGIS Bus Line with Connections (subregion, route name, service type)
+      # One table per year. Contains richer route metadata than yearline files.
+      # Unit suffixes on numeric fields (e.g. "85 km/h", "12%") — stripped in staging.
+      # -----------------------------------------------------------------------
+      - name: RAW_TSPR_BUS_LINE_2019
+        description: ArcGIS Bus Line with Connections — 2019 snapshot
+        columns: &arcgis_columns
+          - name: Line
+            description: Bus route number
+          - name: Line_Name
+            description: Route name (e.g. "41 Joyce-Metrotown")
+          - name: Sub_Region_of_Primary_Service
+            description: Metro Vancouver sub-region (Vancouver/UBC, Burnaby/NW, etc.)
+          - name: Predominant_Vehicle_Type
+          - name: TSG_Service_Type
+            description: Service classification (Local, Express, RapidBus, etc.)
+          - name: Population
+          - name: Employment
+          - name: Average_One_Way_Trip_Dist_km
+          - name: AVG_speed_km_per_hr
+          - name: RANK_Annual_Boardings
+          - name: Annual_Boardings
+          - name: AVG_Daily_Boardings_MF
+          - name: AVG_Daily_Boardings_Sat
+          - name: AVG_Daily_Boardings_SunHol
+          - name: Annual_Revenue_Hours_with_Overc
+          - name: On_Time_Performance_Percentage
+          - name: Annual_Service_Cost
+          - name: Annual_Service_Hours
+          - name: NOTE
+          - name: Exchange_Connections
+          - name: Rail_Connections
+          - name: SHAPE__Length
+          - name: TSPR_Year
+          - name: OBJECTID
+          - name: SHAPE__Length_2
+          - name: GlobalID
+
+      - name: RAW_TSPR_BUS_LINE_2022
+        description: ArcGIS Bus Line with Connections — 2022 snapshot
+        columns: *arcgis_columns
+
+      - name: RAW_TSPR_BUS_LINE_2023
+        description: ArcGIS Bus Line with Connections — 2023 snapshot
+        columns: *arcgis_columns
+
+      - name: RAW_TSPR_BUS_LINE_2024
+        description: ArcGIS Bus Line with Connections — 2024 snapshot
+        columns: *arcgis_columns
+
+      # -----------------------------------------------------------------------
+      # GTFS Stops
+      # -----------------------------------------------------------------------
+      - name: RAW_GTFS_STOPS
+        description: TransLink GTFS stop locations (8,813 stops)
+        columns:
+          - name: stop_id
+          - name: stop_code
+          - name: stop_name
+          - name: stop_desc
+          - name: stop_lat
+          - name: stop_lon
+          - name: zone_id
+          - name: stop_url
+          - name: location_type
+          - name: parent_station
+          - name: wheelchair_boarding
+          - name: stop_timezone
