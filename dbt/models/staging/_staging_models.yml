@@ -1,0 +1,150 @@
+version: 2
+
+models:
+  # ---------------------------------------------------------------------------
+  # stg_bus_performance
+  # ---------------------------------------------------------------------------
+  - name: stg_bus_performance
+    description: >
+      TSPR yearline data for all available years (2019, 2022, 2023, 2024).
+      One row per route per calendar year. Overlapping years between report
+      files are deduplicated; the 2024 report takes precedence.
+    columns:
+      - name: calendar_year
+        description: Calendar year the metrics represent
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2019, 2022, 2023, 2024]
+
+      - name: route_number
+        description: >
+          Normalised bus route number (leading zeros stripped, e.g. "5" not "005").
+          RapidBus and NightBus prefixes (R, N) are preserved.
+        tests:
+          - not_null
+
+      - name: annual_boardings
+        description: Total passenger boardings for the calendar year
+        tests:
+          - not_null
+
+      - name: pct_trips_overcrowded
+        description: Percentage of trips where peak load exceeded capacity (0–100)
+
+      - name: on_time_performance_pct
+        description: Percentage of trips that departed on time (0–1 or 0–100, raw from TransLink)
+
+      - name: avg_speed_km_per_hr
+        description: Average operating speed in km/h
+
+      - name: report_source
+        description: Which report file this row came from (2023 or 2024)
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['2023', '2024']
+
+      - name: is_combined_route
+        description: True if the raw route field contained a combined entry like "005/006"
+        tests:
+          - not_null
+
+    tests:
+      # Each route should appear at most once per year after deduplication
+      - unique:
+          column_name: "route_number || '|' || calendar_year::varchar"
+          name: stg_bus_performance_unique_route_year
+
+  # ---------------------------------------------------------------------------
+  # stg_bus_line
+  # ---------------------------------------------------------------------------
+  - name: stg_bus_line
+    description: >
+      ArcGIS Bus Line with Connections — one row per route per snapshot year
+      (2019, 2022, 2023, 2024). Contains route metadata (name, sub-region,
+      service type, cost) and boardings that complement the yearline KPI data.
+    columns:
+      - name: snapshot_year
+        description: The TSPR snapshot year this row represents
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2019, 2022, 2023, 2024]
+
+      - name: route_number
+        description: Normalised bus route number
+        tests:
+          - not_null
+
+      - name: subregion
+        description: Standardised Metro Vancouver sub-region name
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - 'Vancouver/UBC'
+                  - 'Burnaby/New Westminster'
+                  - 'North Shore'
+                  - 'Northeast Sector'
+                  - 'Southeast (Surrey/Langley)'
+                  - 'Southwest (Richmond/Delta)'
+                  - 'Ridge Meadows'
+                  - 'Tri-Cities'
+
+      - name: service_type
+        description: TSG service classification (Local, Express, RapidBus, etc.)
+        tests:
+          - not_null
+
+      - name: annual_boardings
+        description: Annual passenger boardings from ArcGIS snapshot
+
+      - name: on_time_performance_pct
+        description: On-time performance percentage
+
+    tests:
+      - unique:
+          column_name: "route_number || '|' || snapshot_year::varchar"
+          name: stg_bus_line_unique_route_year
+
+  # ---------------------------------------------------------------------------
+  # stg_stops
+  # ---------------------------------------------------------------------------
+  - name: stg_stops
+    description: >
+      GTFS stop locations — boardable stops only (location_type = 0).
+      Filtered to Metro Vancouver bounding box. Used for geospatial context.
+    columns:
+      - name: stop_id
+        description: Unique GTFS stop identifier
+        tests:
+          - not_null
+          - unique
+
+      - name: stop_lat
+        description: Latitude — must be within Metro Vancouver bounding box
+        tests:
+          - not_null
+
+      - name: stop_lon
+        description: Longitude — must be within Metro Vancouver bounding box
+        tests:
+          - not_null
+
+      - name: stop_name
+        description: Human-readable stop name
+        tests:
+          - not_null
+
+      - name: location_type
+        description: GTFS location type — always 0 in this model (boardable stops only)
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0]

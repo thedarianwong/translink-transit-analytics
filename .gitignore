@@ -25,6 +25,12 @@ env/
 dbt/target/
 dbt/dbt_packages/
 dbt/logs/
+dbt/.user.yml
+
+# Temporary Snowflake query exports
+*.csv
+!data/raw/**
+!dbt/seeds/**
 
 # Airflow
 airflow/logs/
