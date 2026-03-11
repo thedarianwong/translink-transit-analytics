@@ -19,6 +19,7 @@ build/
 .venv/
 venv/
 env/
+.venv
 
 # dbt
 dbt/target/
