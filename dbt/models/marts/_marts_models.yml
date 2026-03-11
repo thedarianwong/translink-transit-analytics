@@ -1,0 +1,170 @@
+version: 2
+
+models:
+  - name: dim_routes
+    description: >
+      One row per bus route. Metadata sourced from the most recent ArcGIS
+      snapshot available per route (latest_snapshot_year). Discontinued routes
+      retain their last known attributes.
+    columns:
+      - name: route_number
+        description: Parsed route number (e.g. "5", "R6"). Primary key.
+        tests:
+          - unique
+          - not_null
+      - name: route_name
+        description: Human-readable route name from ArcGIS data.
+        tests:
+          - not_null
+      - name: subregion
+        description: Standardised sub-region name.
+        tests:
+          - accepted_values:
+              # Some routes may have unmatched subregions — warn rather than error
+              severity: warn
+              arguments:
+                values:
+                  - "Vancouver/UBC"
+                  - "Burnaby/New Westminster"
+                  - "North Shore"
+                  - "Northeast Sector"
+                  - "Southeast (Surrey/Langley)"
+                  - "Southwest (Richmond/Delta)"
+                  - "Ridge Meadows"
+                  - "Tri-Cities"
+      - name: latest_snapshot_year
+        description: The ArcGIS snapshot year from which this row's metadata was taken.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [2019, 2022, 2023, 2024]
+
+  - name: dim_subregions
+    description: >
+      One row per Metro Vancouver sub-region. Sourced from the
+      subregion_population seed CSV (2021 census data).
+    columns:
+      - name: subregion_name
+        description: Full sub-region name. Primary key.
+        tests:
+          - unique
+          - not_null
+      - name: subregion_code
+        description: 3-letter sub-region code.
+        tests:
+          - unique
+          - not_null
+      - name: population_2021
+        description: 2021 census population.
+        tests:
+          - not_null
+      - name: population_density_per_km2
+        description: Persons per km². Derived from population_2021 / area_km2.
+        tests:
+          - not_null
+
+  - name: fact_route_performance
+    description: >
+      One row per route per calendar year. Central fact table joining TSPR
+      KPIs with route metadata and sub-region demographics. Includes derived
+      metrics: recovery_rate (vs 2019), yoy_ridership_change_pct, and
+      overcrowding_severity tier.
+    columns:
+      - name: route_number
+        description: Route number. Part of composite primary key.
+        tests:
+          - not_null
+      - name: calendar_year
+        description: Calendar year of the TSPR data.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2019, 2022, 2023, 2024]
+      - name: annual_boardings
+        description: Total passenger boardings for the year.
+        tests:
+          - not_null
+      - name: overcrowding_severity
+        description: Overcrowding tier based on pct_trips_overcrowded.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["Low", "Medium", "High", "Critical", "Unknown"]
+      - name: recovery_rate
+        description: >
+          Annual boardings indexed to 2019 = 100. NULL for routes without
+          a 2019 baseline (new routes added after 2019).
+          Values well above 100 indicate above-2019 ridership levels.
+
+  - name: fct_overcrowding_ranking
+    description: >
+      Every route ranked by pct_trips_overcrowded within each calendar year.
+      Flags routes persistent in the top 20 across 3+ of 4 available years.
+    columns:
+      - name: route_number
+        description: Route number. Part of composite primary key.
+        tests:
+          - not_null
+      - name: calendar_year
+        description: Calendar year.
+        tests:
+          - not_null
+      - name: overcrowding_rank
+        description: Rank within the year (1 = most overcrowded).
+        tests:
+          - not_null
+      - name: pct_trips_overcrowded
+        description: Proportion of trips with overcrowding (0–1 scale).
+        tests:
+          - not_null
+      - name: is_persistent_overcrowded
+        description: True if the route appears in the top 20 for 3 or more years.
+        tests:
+          - not_null
+
+  - name: fct_service_gap
+    description: >
+      Weighted composite service gap score (0–100) per route per year.
+      Components: overcrowding frequency (50%), peak load pressure (30%),
+      capacity utilisation (20%). Higher = greater unmet demand.
+    columns:
+      - name: route_number
+        description: Route number. Part of composite primary key.
+        tests:
+          - not_null
+      - name: calendar_year
+        description: Calendar year.
+        tests:
+          - not_null
+      - name: gap_score
+        description: Composite gap score, 0–100.
+        tests:
+          - not_null
+      - name: component_overcrowding_freq
+        description: Overcrowding frequency component (0–100).
+      - name: component_peak_load
+        description: Peak load pressure component (0–100).
+      - name: component_capacity_util
+        description: Capacity utilisation component (0–100).
+
+  - name: fct_recovery_trends
+    description: >
+      Key metrics indexed to 2019 = 100 for each route and year.
+      Enables pandemic impact and recovery trajectory analysis.
+      Sub-region rollup uses volume-weighted boardings index.
+    columns:
+      - name: route_number
+        description: Route number. Part of composite primary key.
+        tests:
+          - not_null
+      - name: calendar_year
+        description: Calendar year.
+        tests:
+          - not_null
+      - name: has_2019_baseline
+        description: False for routes added after 2019 (index columns will be NULL).
+        tests:
+          - not_null
+      - name: boardings_index
+        description: Annual boardings indexed to 2019 = 100. NULL if no 2019 baseline.
