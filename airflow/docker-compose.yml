@@ -1,12 +1,18 @@
 ---
-# Apache Airflow 2.7 — LocalExecutor + PostgreSQL metadata DB
-# Usage:
-#   docker-compose up airflow-init   (first run only — creates admin user)
-#   docker-compose up -d             (start all services)
-#   docker-compose down              (stop)
+# TransLink Analytics — Airflow + Metabase
 #
-# Access Airflow UI at http://localhost:8080
-# Default credentials: admin / admin
+# Services:
+#   - postgres        Airflow metadata DB
+#   - airflow-init    One-time DB init (run separately first)
+#   - airflow-webserver  http://localhost:8080  (admin / admin)
+#   - airflow-scheduler  Runs DAG tasks
+#   - metabase        http://localhost:3000
+#
+# First run:
+#   docker compose up airflow-init
+#   docker compose up -d
+#
+# Metabase setup: visit http://localhost:3000, connect to Snowflake ANALYTICS schema
 
 x-airflow-common: &airflow-common
   build: .
@@ -85,5 +91,17 @@ services:
     environment:
       <<: *airflow-common-env
 
+  metabase:
+    image: metabase/metabase:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - metabase-data:/metabase-data
+    environment:
+      # Metabase stores its own app data (questions, dashboards) in an embedded H2 db
+      MB_DB_FILE: /metabase-data/metabase.db
+    restart: always
+
 volumes:
   postgres-db-volume:
+  metabase-data:
